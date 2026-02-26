@@ -36,6 +36,22 @@
     <div class="loading-text" id="loading-text">読み込み中...</div>
   </div>
 
+  <!-- クロップモーダル -->
+  <div id="crop-modal" class="crop-modal hidden">
+    <div class="crop-header">
+      <button class="crop-header-btn" onclick="ImageCropper.cancel()">✕ キャンセル</button>
+      <span class="crop-title">✂️ トリミング</span>
+      <button class="crop-header-btn crop-skip-btn" onclick="ImageCropper.skipCrop()">そのまま使う</button>
+    </div>
+    <div class="crop-container" id="crop-container">
+      <canvas id="crop-canvas"></canvas>
+    </div>
+    <div class="crop-guide">指で切り取りたい範囲を選択してください</div>
+    <div class="crop-actions">
+      <button class="btn btn-primary btn-large" onclick="ImageCropper.confirmCrop()">✔ この範囲で切り取る</button>
+    </div>
+  </div>
+
   <div class="app-container">
 
     <!-- ヘッダー -->
@@ -236,6 +252,7 @@
   <!-- JS -->
   <script src="js/sm2.js"></script>
   <script src="js/image-resizer.js"></script>
+  <script src="js/image-cropper.js"></script>
   <script src="js/db.js"></script>
   <script src="js/api.js"></script>
   <script src="js/sync.js"></script>

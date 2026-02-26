@@ -148,13 +148,25 @@ const App = (() => {
         try {
             showLoading('画像をリサイズ中...');
 
-            const result = await ImageResizer.resize(file, {
+            const resized = await ImageResizer.resize(file, {
                 maxSize: 1024,
                 quality: 0.7,
                 onProgress: (progress, text) => {
                     document.getElementById('loading-text').textContent = text;
                 }
             });
+
+            hideLoading();
+
+            // クロッパーを開く
+            let result;
+            try {
+                result = await ImageCropper.open(resized.dataUrl);
+                result.originalSize = resized.originalSize;
+            } catch (e) {
+                // キャンセルされた場合は何もしない
+                return;
+            }
 
             // 状態保存
             if (side === 'front') {
@@ -176,7 +188,6 @@ const App = (() => {
             const infoEl = document.getElementById(side + '-info');
             infoEl.textContent = `${result.width}×${result.height}px | ${ImageResizer.formatSize(result.size)} (元: ${ImageResizer.formatSize(result.originalSize)})`;
 
-            hideLoading();
             showToast(`${side === 'front' ? '表面' : '裏面'}の画像を取得しました`, 'success');
         } catch (error) {
             hideLoading();
@@ -528,13 +539,15 @@ const App = (() => {
             const path = prefix ? prefix + '/' + name : name;
             const cardCount = state.allCards.filter(c => c.folder_path === path).length;
             const hasChildren = Object.keys(children).length > 0;
+            const escapedPath = path.replace(/'/g, "\\'");
 
             html += `
         <li>
-          <div class="folder-item" onclick="App.studyFolder('${path}')">
-            <span class="folder-icon">${hasChildren ? '📂' : '📁'}</span>
-            <span class="folder-name">${name}</span>
+          <div class="folder-item">
+            <span class="folder-icon" onclick="App.studyFolder('${escapedPath}')">${hasChildren ? '📂' : '📁'}</span>
+            <span class="folder-name" onclick="App.studyFolder('${escapedPath}')">${name}</span>
             <span class="card-count">${cardCount}枚</span>
+            <button class="folder-delete" onclick="event.stopPropagation(); App.deleteFolder('${escapedPath}')" title="削除">🗑️</button>
           </div>
           ${hasChildren ? '<ul class="folder-children">' + buildTreeHTML(children, path) + '</ul>' : ''}
         </li>
@@ -571,6 +584,46 @@ const App = (() => {
         }
 
         input.value = '';
+    }
+
+    async function deleteFolder(path) {
+        if (!confirm(`フォルダ「${path}」を削除しますか？\n※フォルダ内のカードも削除されます`)) {
+            return;
+        }
+
+        try {
+            showLoading('フォルダを削除中...');
+
+            // フォルダ内のカードを削除
+            const cardsToDelete = state.allCards.filter(c =>
+                c.folder_path === path || c.folder_path.startsWith(path + '/')
+            );
+
+            for (const card of cardsToDelete) {
+                try {
+                    await API.deleteCard(card.id);
+                } catch (e) {
+                    console.warn('Card delete failed:', card.id, e);
+                }
+            }
+
+            // フォルダをローカルから削除
+            state.folders = state.folders.filter(f =>
+                f !== path && !f.startsWith(path + '/')
+            );
+            await DB.saveFolders(state.folders);
+
+            // データ再読み込み
+            await loadData();
+            renderFolderTree();
+            updateFolderSelectors();
+
+            hideLoading();
+            showToast(`フォルダ「${path}」を削除しました`, 'success');
+        } catch (error) {
+            hideLoading();
+            showToast('削除に失敗しました: ' + error.message, 'error');
+        }
     }
 
     async function studyFolder(path) {
@@ -806,6 +859,24 @@ const App = (() => {
         }
     }
 
+    // ===== GAS 接続テスト =====
+
+    async function testConnection() {
+        try {
+            showLoading('GAS接続テスト中...');
+            const result = await API.getCards();
+            hideLoading();
+            if (result.offline) {
+                showToast('オフラインモードで動作中\nGASに接続できません', 'info');
+            } else {
+                showToast(`GAS接続 OK！ カード${result.cards?.length || 0}枚取得`, 'success');
+            }
+        } catch (e) {
+            hideLoading();
+            showToast('GAS接続エラー: ' + e.message, 'error');
+        }
+    }
+
     // ===== 公開API =====
     return {
         init,
@@ -817,9 +888,11 @@ const App = (() => {
         rateCard,
         onFolderChange,
         addFolder,
+        deleteFolder,
         studyFolder,
         installPWA,
-        dismissInstall
+        dismissInstall,
+        testConnection
     };
 })();
 

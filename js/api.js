@@ -176,6 +176,24 @@ const API = (() => {
     }
 
     /**
+     * フォルダ削除（フォルダ内のカードも削除）
+     */
+    async function deleteFolder(folderPath) {
+        // ローカルのカードも削除
+        const cards = await DB.getCardsByFolder(folderPath);
+        for (const card of cards) {
+            await DB.deleteCard(card.id);
+        }
+
+        if (!navigator.onLine) {
+            await DB.addToSyncQueue({ action: 'deleteFolder', folderPath });
+            return { success: true, offline: true };
+        }
+
+        return request({ action: 'deleteFolder', folderPath });
+    }
+
+    /**
      * GAS_URL が設定済みか確認
      */
     function isConfigured() {
@@ -183,6 +201,6 @@ const API = (() => {
     }
 
     return {
-        uploadImage, createCard, getCards, updateCard, deleteCard, getFolders, isConfigured, request
+        uploadImage, createCard, getCards, updateCard, deleteCard, deleteFolder, getFolders, isConfigured, request
     };
 })();

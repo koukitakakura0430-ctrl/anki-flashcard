@@ -31,6 +31,8 @@ function doPost(e) {
         return jsonResponse(updateCard(data));
       case 'deleteCard':
         return jsonResponse(deleteCard(data));
+      case 'deleteFolder':
+        return jsonResponse(deleteFolderCards(data));
       case 'getFolders':
         return jsonResponse(getFolders());
       case 'syncBatch':
@@ -233,6 +235,41 @@ function tryDeleteDriveFile(url) {
   } catch (e) {
     // ファイルが見つからない場合は無視
   }
+}
+
+// ===== フォルダ削除 =====
+
+function deleteFolderCards(data) {
+  const folderPath = data.folderPath;
+  if (!folderPath) {
+    return { success: false, error: 'folderPath is required' };
+  }
+
+  const sheet = getSheet();
+  const rows = sheet.getDataRange().getValues();
+  const headers = rows[0];
+  const folderCol = headers.indexOf('folder_path');
+  const frontUrlCol = headers.indexOf('front_image_url');
+  const backUrlCol = headers.indexOf('back_image_url');
+
+  // 削除対象の行を逆順で特定（逆順で削除しないとインデックスがずれる）
+  const rowsToDelete = [];
+  for (let i = 1; i < rows.length; i++) {
+    const cardFolder = rows[i][folderCol];
+    if (cardFolder === folderPath || cardFolder.startsWith(folderPath + '/')) {
+      rowsToDelete.push(i);
+      // Drive画像も削除
+      tryDeleteDriveFile(rows[i][frontUrlCol]);
+      tryDeleteDriveFile(rows[i][backUrlCol]);
+    }
+  }
+
+  // 逆順で行を削除
+  for (let i = rowsToDelete.length - 1; i >= 0; i--) {
+    sheet.deleteRow(rowsToDelete[i] + 1);
+  }
+
+  return { success: true, deletedCount: rowsToDelete.length };
 }
 
 // ===== フォルダ管理 =====

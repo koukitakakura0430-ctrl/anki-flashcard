@@ -904,6 +904,92 @@ body::before {
   margin-left: -var(--space-sm);
 }
 
+/* --- クロップモーダル --- */
+.crop-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 600;
+  background: var(--bg-primary);
+  display: flex;
+  flex-direction: column;
+}
+
+.crop-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-sm) var(--space-md);
+  padding-top: calc(var(--safe-top) + var(--space-sm));
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.crop-header-btn {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  padding: var(--space-sm);
+}
+
+.crop-skip-btn {
+  color: var(--accent-secondary);
+}
+
+.crop-title {
+  font-size: var(--font-size-base);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.crop-container {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  touch-action: none;
+}
+
+.crop-container canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.crop-guide {
+  text-align: center;
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  padding: var(--space-sm);
+}
+
+.crop-actions {
+  padding: var(--space-sm) var(--space-md);
+  padding-bottom: calc(var(--safe-bottom) + var(--space-sm));
+  background: var(--bg-secondary);
+}
+
+/* フォルダ削除ボタン */
+.folder-item .folder-delete {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1rem;
+  cursor: pointer;
+  padding: var(--space-xs);
+  opacity: 0.5;
+  transition: opacity var(--transition-fast), color var(--transition-fast);
+}
+
+.folder-item .folder-delete:active {
+  opacity: 1;
+  color: var(--danger);
+}
+
 /* --- ユーティリティ --- */
 .hidden {
   display: none !important;
