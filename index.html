@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="暗記カード">
+  <meta name="theme-color" content="#0f0f1a">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="description" content="建築士・宅建試験対策用フラッシュカード - SM-2間隔反復学習">
+  <meta name="format-detection" content="telephone=no">
+
+  <title>暗記カード</title>
+
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" sizes="192x192" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" sizes="512x512" href="icons/icon-512.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+
+  <!-- トースト通知 -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- ローディングオーバーレイ -->
+  <div id="loading-overlay" class="loading-overlay hidden">
+    <div class="loading-spinner"></div>
+    <div class="loading-text" id="loading-text">読み込み中...</div>
+  </div>
+
+  <div class="app-container">
+
+    <!-- ヘッダー -->
+    <header class="app-header">
+      <div class="header-content">
+        <h1 class="app-title">📚 暗記カード</h1>
+        <span id="connection-status" class="connection-badge online">オンライン</span>
+      </div>
+    </header>
+
+    <!-- ===== ホーム画面 ===== -->
+    <section id="screen-home" class="screen active">
+      <div class="stats-grid">
+        <div class="stat-card" id="stat-total">
+          <div class="stat-number" id="total-cards">0</div>
+          <div class="stat-label">総カード数</div>
+        </div>
+        <div class="stat-card" id="stat-due">
+          <div class="stat-number" id="due-cards">0</div>
+          <div class="stat-label">今日の復習</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="studied-today">0</div>
+          <div class="stat-label">今日学習済</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="folder-count">0</div>
+          <div class="stat-label">フォルダ数</div>
+        </div>
+      </div>
+
+      <div class="action-buttons">
+        <button class="btn btn-primary btn-large" onclick="App.startStudy()">
+          🧠 学習を始める
+        </button>
+        <button class="btn btn-secondary btn-large" onclick="App.showScreen('create')">
+          📷 新しいカードを作る
+        </button>
+      </div>
+    </section>
+
+    <!-- ===== カード作成画面 ===== -->
+    <section id="screen-create" class="screen">
+      <h2 class="section-title">📷 カード作成</h2>
+
+      <div class="capture-area">
+        <!-- 表面（問題） -->
+        <div>
+          <div class="capture-box" id="front-capture" onclick="document.getElementById('front-input').click()">
+            <div class="capture-icon">📸</div>
+            <div class="capture-label">表面（問題）をタップして撮影</div>
+            <input type="file" id="front-input" accept="image/*" capture="environment"
+              onchange="App.handleImageCapture(this, 'front')">
+          </div>
+          <div class="image-info" id="front-info"></div>
+        </div>
+
+        <!-- 裏面（答え） -->
+        <div>
+          <div class="capture-box" id="back-capture" onclick="document.getElementById('back-input').click()">
+            <div class="capture-icon">📸</div>
+            <div class="capture-label">裏面（答え）をタップして撮影</div>
+            <input type="file" id="back-input" accept="image/*" capture="environment"
+              onchange="App.handleImageCapture(this, 'back')">
+          </div>
+          <div class="image-info" id="back-info"></div>
+        </div>
+
+        <!-- フォルダ選択 -->
+        <div class="folder-selector">
+          <label>📁 保存先フォルダ</label>
+          <div class="folder-input-group">
+            <select id="folder-level1" onchange="App.onFolderChange(1)">
+              <option value="">-- レベル1 --</option>
+            </select>
+          </div>
+          <div class="folder-input-group">
+            <select id="folder-level2" onchange="App.onFolderChange(2)">
+              <option value="">-- レベル2 --</option>
+            </select>
+          </div>
+          <div class="folder-input-group">
+            <select id="folder-level3">
+              <option value="">-- レベル3 --</option>
+            </select>
+          </div>
+          <div class="folder-input-group">
+            <input type="text" id="new-folder-input" placeholder="新しいフォルダパス（例: 建築/法規/定義）">
+          </div>
+        </div>
+
+        <!-- プログレス -->
+        <div class="progress-bar" id="upload-progress">
+          <div class="fill" id="upload-progress-fill"></div>
+        </div>
+        <div class="progress-text" id="upload-progress-text"></div>
+
+        <!-- 保存ボタン -->
+        <button class="btn btn-primary btn-large" id="save-card-btn" onclick="App.saveCard()">
+          💾 カードを保存
+        </button>
+      </div>
+    </section>
+
+    <!-- ===== 学習セッション画面 ===== -->
+    <section id="screen-study" class="screen">
+      <div class="study-progress" id="study-progress">
+        <span id="study-current">0</span>
+        <div class="study-progress-bar">
+          <div class="fill" id="study-progress-fill"></div>
+        </div>
+        <span id="study-total">0</span>
+      </div>
+
+      <!-- カード表示 -->
+      <div class="study-card-container" id="study-card-container">
+        <div class="study-card" id="study-card" onclick="App.flipCard()">
+          <div class="study-card-face study-card-front">
+            <span class="card-side-label">問題</span>
+            <img id="study-front-img" src="" alt="問題">
+          </div>
+          <div class="study-card-face study-card-back">
+            <span class="card-side-label">答え</span>
+            <img id="study-back-img" src="" alt="答え">
+          </div>
+        </div>
+      </div>
+
+      <div class="tap-hint" id="tap-hint">タップしてカードをめくる</div>
+
+      <!-- 評価ボタン -->
+      <div class="rating-buttons" id="rating-buttons">
+        <!-- SM-2の評価ボタンはJSから動的生成 -->
+      </div>
+
+      <!-- 学習完了 -->
+      <div class="study-complete hidden" id="study-complete">
+        <div class="complete-emoji">🎉</div>
+        <h2>学習完了！</h2>
+        <p>今日の復習カードをすべて完了しました</p>
+        <button class="btn btn-primary btn-large" onclick="App.showScreen('home')">
+          ホームに戻る
+        </button>
+      </div>
+    </section>
+
+    <!-- ===== フォルダ管理画面 ===== -->
+    <section id="screen-folders" class="screen">
+      <h2 class="section-title">📁 フォルダ管理</h2>
+
+      <ul class="folder-tree" id="folder-tree">
+        <!-- JSから動的生成 -->
+      </ul>
+
+      <div class="add-folder-form">
+        <input type="text" id="add-folder-input" placeholder="新しいフォルダ（例: 建築/構造/力学）">
+        <button class="btn btn-primary" onclick="App.addFolder()">追加</button>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- PWA インストールバナー -->
+  <div id="install-banner" class="install-banner">
+    <span class="install-icon">📲</span>
+    <div class="install-text">
+      <div class="install-title">ホーム画面に追加</div>
+      <div class="install-desc" id="install-desc">アプリのように使えます</div>
+    </div>
+    <div class="install-actions">
+      <button class="btn-install" id="install-btn" onclick="App.installPWA()">追加</button>
+      <button class="btn-dismiss" onclick="App.dismissInstall()">✕</button>
+    </div>
+  </div>
+
+  <!-- 下部ナビゲーション -->
+  <nav class="bottom-nav">
+    <div class="nav-items">
+      <button class="nav-item active" data-screen="home" onclick="App.showScreen('home')">
+        <span class="nav-icon">🏠</span>
+        <span>ホーム</span>
+      </button>
+      <button class="nav-item" data-screen="create" onclick="App.showScreen('create')">
+        <span class="nav-icon">➕</span>
+        <span>作成</span>
+      </button>
+      <button class="nav-item" data-screen="study" onclick="App.startStudy()">
+        <span class="nav-icon">🧠</span>
+        <span>学習</span>
+      </button>
+      <button class="nav-item" data-screen="folders" onclick="App.showScreen('folders')">
+        <span class="nav-icon">📁</span>
+        <span>フォルダ</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- JS -->
+  <script src="js/sm2.js"></script>
+  <script src="js/image-resizer.js"></script>
+  <script src="js/db.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/sync.js"></script>
+  <script src="js/app.js"></script>
+
+</body>
+
+</html>
