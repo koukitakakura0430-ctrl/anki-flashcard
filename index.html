@@ -103,7 +103,7 @@
           <div class="capture-box" id="front-capture" onclick="document.getElementById('front-input').click()">
             <div class="capture-icon">📸</div>
             <div class="capture-label">表面（問題）をタップして撮影</div>
-            <input type="file" id="front-input" accept="image/*" capture="environment"
+            <input type="file" id="front-input" accept="image/*,.heic,.heif" capture="environment"
               onchange="App.handleImageCapture(this, 'front')">
           </div>
           <div class="image-info" id="front-info"></div>
@@ -114,7 +114,7 @@
           <div class="capture-box" id="back-capture" onclick="document.getElementById('back-input').click()">
             <div class="capture-icon">📸</div>
             <div class="capture-label">裏面（答え）をタップして撮影</div>
-            <input type="file" id="back-input" accept="image/*" capture="environment"
+            <input type="file" id="back-input" accept="image/*,.heic,.heif" capture="environment"
               onchange="App.handleImageCapture(this, 'back')">
           </div>
           <div class="image-info" id="back-info"></div>

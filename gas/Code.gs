@@ -78,7 +78,7 @@ function uploadImage(data) {
   file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
 
   const fileId = file.getId();
-  const url = 'https://drive.google.com/uc?id=' + fileId;
+  const url = 'https://lh3.googleusercontent.com/d/' + fileId;
 
   return { success: true, url: url, fileId: fileId };
 }

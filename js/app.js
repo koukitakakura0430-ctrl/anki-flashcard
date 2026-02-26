@@ -62,6 +62,20 @@ const App = (() => {
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('./sw.js').then(reg => {
                 console.log('SW registered:', reg.scope);
+
+                // 新しいSWが見つかったら自動更新
+                reg.addEventListener('updatefound', () => {
+                    const newWorker = reg.installing;
+                    newWorker.addEventListener('statechange', () => {
+                        if (newWorker.state === 'activated') {
+                            console.log('New SW activated, reloading...');
+                            window.location.reload();
+                        }
+                    });
+                });
+
+                // 定期的に更新チェック（5分ごと）
+                setInterval(() => reg.update(), 5 * 60 * 1000);
             }).catch(err => {
                 console.warn('SW registration failed:', err);
             });

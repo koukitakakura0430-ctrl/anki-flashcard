@@ -3,7 +3,7 @@
  * Cache-First (静的アセット) + Network-First (API)
  */
 
-const CACHE_NAME = 'flashcard-v3';
+const CACHE_NAME = 'flashcard-v4';
 const STATIC_ASSETS = [
     './',
     './index.html',
@@ -39,6 +39,13 @@ self.addEventListener('activate', event => {
         })
     );
     self.clients.claim();
+});
+
+// クライアントからの強制更新メッセージ
+self.addEventListener('message', event => {
+    if (event.data === 'SKIP_WAITING') {
+        self.skipWaiting();
+    }
 });
 
 // フェッチ戦略
