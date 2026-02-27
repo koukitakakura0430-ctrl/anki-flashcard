@@ -15,10 +15,24 @@ const ImageResizer = (() => {
     async function resize(file, options = {}) {
         const { maxSize = 1024, quality = 0.7, onProgress } = options;
 
-        if (onProgress) onProgress(0.1, '画像を読み込み中...');
+        if (onProgress) onProgress(0.05, '画像を確認中...');
 
-        // ファイルを読み込む
-        const dataUrl = await readFileAsDataURL(file);
+        // HEIC/HEIF ファイルの場合は先にJPEGに変換
+        let processFile = file;
+        if (typeof HeicConverter !== 'undefined' && HeicConverter.isHeic(file)) {
+            if (onProgress) onProgress(0.1, 'HEIC形式を変換中...');
+            processFile = await HeicConverter.convert(file, {
+                quality: 0.85,
+                onProgress: (p, text) => {
+                    if (onProgress) onProgress(0.1 + p * 0.2, text);
+                }
+            });
+        }
+
+        if (onProgress) onProgress(0.3, '画像を読み込み中...');
+
+        // ファイルを読み込む（変換済みファイルを使用）
+        const dataUrl = await readFileAsDataURL(processFile);
 
         if (onProgress) onProgress(0.3, 'リサイズ中...');
 

@@ -3,13 +3,14 @@
  * Cache-First (静的アセット) + Network-First (API)
  */
 
-const CACHE_NAME = 'flashcard-v4';
+const CACHE_NAME = 'flashcard-v5';
 const STATIC_ASSETS = [
     './',
     './index.html',
     './css/style.css',
     './js/app.js',
     './js/sm2.js',
+    './js/heic-converter.js',
     './js/image-resizer.js',
     './js/image-cropper.js',
     './js/db.js',
