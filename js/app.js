@@ -450,16 +450,32 @@ const App = (() => {
     function flipCard() {
         if (state.studyCards.length === 0) return;
 
-        state.isFlipped = !state.isFlipped;
-        document.getElementById('study-card').classList.toggle('flipped', state.isFlipped);
+        const card = document.getElementById('study-card');
 
-        if (state.isFlipped) {
-            document.getElementById('tap-hint').classList.add('hidden');
-            document.getElementById('rating-buttons').classList.add('visible');
-        } else {
-            document.getElementById('rating-buttons').classList.remove('visible');
-            document.getElementById('tap-hint').classList.remove('hidden');
-        }
+        // アニメーション中なら無視
+        if (card.classList.contains('flipping')) return;
+
+        // scaleXアニメーション開始
+        card.classList.add('flipping');
+
+        // アニメーションの中間地点（200ms）で表裏を切り替え
+        setTimeout(() => {
+            state.isFlipped = !state.isFlipped;
+            card.classList.toggle('flipped', state.isFlipped);
+
+            if (state.isFlipped) {
+                document.getElementById('tap-hint').classList.add('hidden');
+                document.getElementById('rating-buttons').classList.add('visible');
+            } else {
+                document.getElementById('rating-buttons').classList.remove('visible');
+                document.getElementById('tap-hint').classList.remove('hidden');
+            }
+        }, 200);
+
+        // アニメーション終了後にクラス除去
+        setTimeout(() => {
+            card.classList.remove('flipping');
+        }, 400);
     }
 
     function renderRatingButtons() {
