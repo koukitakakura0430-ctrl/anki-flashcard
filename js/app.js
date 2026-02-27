@@ -249,6 +249,13 @@ const App = (() => {
                 back_image_url: backResult.url
             });
 
+            // 画像をローカルにキャッシュ（学習画面での表示用）
+            if (cardResult.success && cardResult.card) {
+                const cardId = cardResult.card.id;
+                await DB.cacheImage('front_' + cardId, state.frontImage.base64);
+                await DB.cacheImage('back_' + cardId, state.backImage.base64);
+            }
+
             setProgress(100, '完了！');
 
             if (cardResult.success) {
@@ -348,7 +355,7 @@ const App = (() => {
         }
     }
 
-    function showStudyCard() {
+    async function showStudyCard() {
         const card = state.studyCards[state.studyIndex];
         if (!card) return;
 
@@ -361,25 +368,83 @@ const App = (() => {
         const frontImg = document.getElementById('study-front-img');
         const backImg = document.getElementById('study-back-img');
 
-        // オフライン画像対応
-        if (card.front_image_url?.startsWith('offline://')) {
-            DB.getCachedImage(card.front_image_url.replace('offline://', '')).then(cached => {
-                if (cached) frontImg.src = 'data:image/jpeg;base64,' + cached.base64;
-            });
-        } else {
-            frontImg.src = card.front_image_url || '';
-        }
-
-        if (card.back_image_url?.startsWith('offline://')) {
-            DB.getCachedImage(card.back_image_url.replace('offline://', '')).then(cached => {
-                if (cached) backImg.src = 'data:image/jpeg;base64,' + cached.base64;
-            });
-        } else {
-            backImg.src = card.back_image_url || '';
-        }
+        // 画像ロード: ローカルキャッシュ優先 → URL フォールバック
+        await loadCardImage(frontImg, card, 'front');
+        await loadCardImage(backImg, card, 'back');
 
         // 評価ボタン生成
         renderRatingButtons();
+    }
+
+    /**
+     * カード画像をロードする
+     * 優先順位: 1. ローカルキャッシュ(by card id) → 2. オフラインキャッシュ → 3. URL直接表示
+     */
+    async function loadCardImage(imgEl, card, side) {
+        const url = side === 'front' ? card.front_image_url : card.back_image_url;
+
+        // 1. カードIDベースのローカルキャッシュを確認
+        try {
+            const cached = await DB.getCachedImage(side + '_' + card.id);
+            if (cached && cached.base64) {
+                imgEl.src = 'data:image/jpeg;base64,' + cached.base64;
+                return;
+            }
+        } catch (e) {
+            // キャッシュ取得失敗は無視
+        }
+
+        // 2. オフラインURL（offline://）の場合
+        if (url?.startsWith('offline://')) {
+            try {
+                const cached = await DB.getCachedImage(url.replace('offline://', ''));
+                if (cached && cached.base64) {
+                    imgEl.src = 'data:image/jpeg;base64,' + cached.base64;
+                    return;
+                }
+            } catch (e) {
+                // フォールバック
+            }
+        }
+
+        // 3. URL直接表示（Google Drive等）+ 取得できたらキャッシュ
+        if (url && !url.startsWith('offline://')) {
+            try {
+                // fetchで画像を取得してキャッシュに保存
+                const response = await fetch(url);
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const base64 = await blobToBase64(blob);
+                    imgEl.src = 'data:image/jpeg;base64,' + base64;
+                    // 次回用にキャッシュ
+                    DB.cacheImage(side + '_' + card.id, base64).catch(() => { });
+                    return;
+                }
+            } catch (e) {
+                console.warn('画像fetch失敗、直接URLで試行:', url);
+            }
+            // fetchに失敗した場合はimg.srcに直接設定
+            imgEl.src = url;
+            imgEl.onerror = () => {
+                console.warn('画像ロード失敗:', url);
+                imgEl.alt = side === 'front' ? '問題画像を読み込めません' : '答え画像を読み込めません';
+            };
+        }
+    }
+
+    /**
+     * BlobをBase64文字列に変換
+     */
+    function blobToBase64(blob) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => {
+                const dataUrl = reader.result;
+                resolve(dataUrl.split(',')[1]);
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+        });
     }
 
     function flipCard() {
