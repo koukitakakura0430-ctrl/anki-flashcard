@@ -556,44 +556,54 @@ body::before {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
-  padding: var(--space-md) var(--space-sm);
-  border: none;
-  border-radius: var(--border-radius-sm);
+  justify-content: center;
+  gap: 6px;
+  padding: 14px 8px;
+  border: 2px solid;
+  border-radius: var(--border-radius);
   font-family: var(--font-family);
   font-size: var(--font-size-xs);
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: all 0.15s ease;
   touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  min-height: 72px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 .rating-btn:active {
-  transform: scale(0.92);
+  transform: scale(0.88);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  filter: brightness(1.3);
 }
 
 .rating-btn .emoji {
-  font-size: 1.5rem;
+  font-size: 1.6rem;
 }
 
 .rating-again {
   background: rgba(255, 107, 107, 0.15);
   color: var(--danger);
+  border-color: rgba(255, 107, 107, 0.5);
 }
 
 .rating-hard {
   background: rgba(253, 203, 110, 0.15);
   color: var(--warning);
+  border-color: rgba(253, 203, 110, 0.5);
 }
 
 .rating-good {
   background: rgba(116, 185, 255, 0.15);
   color: var(--info);
+  border-color: rgba(116, 185, 255, 0.5);
 }
 
 .rating-easy {
   background: rgba(0, 206, 201, 0.15);
   color: var(--success);
+  border-color: rgba(0, 206, 201, 0.5);
 }
 
 .study-progress {

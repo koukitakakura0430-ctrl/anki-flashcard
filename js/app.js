@@ -494,6 +494,19 @@ const App = (() => {
         const card = state.studyCards[state.studyIndex];
         if (!card) return;
 
+        // ボタンの即時フィードバック
+        const buttons = document.querySelectorAll('.rating-btn');
+        buttons.forEach(btn => {
+            btn.disabled = true;
+            btn.style.opacity = '0.5';
+        });
+        // 押したボタンをハイライト
+        const clickedBtn = event?.target?.closest('.rating-btn');
+        if (clickedBtn) {
+            clickedBtn.style.opacity = '1';
+            clickedBtn.style.transform = 'scale(1.1)';
+        }
+
         // SM-2 計算
         const sm2Result = SM2.calculate(
             quality,
@@ -502,36 +515,36 @@ const App = (() => {
             card.interval || 0
         );
 
-        // カード更新
-        try {
-            await API.updateCard({
-                id: card.id,
-                easiness_factor: sm2Result.easinessFactor,
-                interval: sm2Result.interval,
-                repetition_count: sm2Result.repetitionCount,
-                next_review_date: sm2Result.nextReviewDate
-            });
-        } catch (error) {
+        // API更新はバックグラウンドで実行（レスポンスを待たない）
+        API.updateCard({
+            id: card.id,
+            easiness_factor: sm2Result.easinessFactor,
+            interval: sm2Result.interval,
+            repetition_count: sm2Result.repetitionCount,
+            next_review_date: sm2Result.nextReviewDate
+        }).catch(error => {
             console.warn('Card update failed, queued for sync:', error);
-        }
+        });
 
         state.studiedToday++;
 
-        // 次のカードへ
-        state.studyIndex++;
-        updateStudyProgress();
+        // 少し待ってからフィードバック後に次のカードへ
+        setTimeout(() => {
+            state.studyIndex++;
+            updateStudyProgress();
 
-        if (state.studyIndex >= state.studyCards.length) {
-            // 学習完了
-            document.getElementById('study-card-container').classList.add('hidden');
-            document.getElementById('tap-hint').classList.add('hidden');
-            document.getElementById('rating-buttons').classList.remove('visible');
-            document.getElementById('study-complete').classList.remove('hidden');
-            // スリープ防止解除
-            releaseWakeLock();
-        } else {
-            showStudyCard();
-        }
+            if (state.studyIndex >= state.studyCards.length) {
+                // 学習完了
+                document.getElementById('study-card-container').classList.add('hidden');
+                document.getElementById('tap-hint').classList.add('hidden');
+                document.getElementById('rating-buttons').classList.remove('visible');
+                document.getElementById('study-complete').classList.remove('hidden');
+                // スリープ防止解除
+                releaseWakeLock();
+            } else {
+                showStudyCard();
+            }
+        }, 250);
     }
 
     function updateStudyProgress() {
